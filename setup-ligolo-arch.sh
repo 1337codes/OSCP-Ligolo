@@ -91,7 +91,15 @@ done < <(find "$WORKSPACE/agents" -maxdepth 1 \( -type f -o -type l \) 2>/dev/nu
 [[ $CLEANED -eq 0 ]] && ok "agents/ already clean" || ok "removed $CLEANED stale entry/entries"
 
 # ─── agents (cross-platform) ─────────────────────────────────────────
+# Note: linux/darwin/freebsd are .tar.gz, windows is .zip
 banner "Fetching agents (linux / windows / darwin / freebsd × amd64+arm64)"
+
+# Make sure unzip is around for the windows case
+if ! command -v unzip &>/dev/null; then
+    warn "unzip missing — installing for windows agent extraction"
+    $SUDO pacman -S --needed --noconfirm unzip || warn "couldn't install unzip — windows agents will be skipped"
+fi
+
 STAGED=0; SKIPPED=0
 for os in linux windows darwin freebsd; do
     for arch in amd64 arm64; do
@@ -101,15 +109,33 @@ for os in linux windows darwin freebsd; do
             SKIPPED=$((SKIPPED+1))
             continue
         fi
-        tgz="ligolo-ng_agent_${LIGOLO_VERSION}_${os}_${arch}.tar.gz"
         tmp=$(mktemp -d)
-        if curl -sLf "${RELEASE_BASE}/${tgz}" | tar xz -C "$tmp" 2>/dev/null; then
-            run_as_user mv -f "$tmp/agent${ext}" "$dst"
-            run_as_user chmod +x "$dst"
-            ok "${os}-${arch}${ext}"
-            STAGED=$((STAGED+1))
+        if [[ "$os" == "windows" ]]; then
+            # Windows is shipped as zip
+            zip="ligolo-ng_agent_${LIGOLO_VERSION}_${os}_${arch}.zip"
+            if curl -sLf "${RELEASE_BASE}/${zip}" -o "$tmp/a.zip" \
+               && command -v unzip &>/dev/null \
+               && unzip -q "$tmp/a.zip" -d "$tmp" \
+               && [[ -f "$tmp/agent.exe" ]]; then
+                run_as_user mv -f "$tmp/agent.exe" "$dst"
+                run_as_user chmod +x "$dst"
+                ok "${os}-${arch}${ext}"
+                STAGED=$((STAGED+1))
+            else
+                warn "${os}-${arch} not available in v${LIGOLO_VERSION}, skipping"
+            fi
         else
-            warn "${os}-${arch} not available in v${LIGOLO_VERSION}, skipping"
+            # Everything else is tar.gz
+            tgz="ligolo-ng_agent_${LIGOLO_VERSION}_${os}_${arch}.tar.gz"
+            if curl -sLf "${RELEASE_BASE}/${tgz}" | tar xz -C "$tmp" 2>/dev/null \
+               && [[ -f "$tmp/agent" ]]; then
+                run_as_user mv -f "$tmp/agent" "$dst"
+                run_as_user chmod +x "$dst"
+                ok "${os}-${arch}"
+                STAGED=$((STAGED+1))
+            else
+                warn "${os}-${arch} not available in v${LIGOLO_VERSION}, skipping"
+            fi
         fi
         rm -rf "$tmp"
     done
