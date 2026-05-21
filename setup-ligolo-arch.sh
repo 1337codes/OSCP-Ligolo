@@ -1,208 +1,232 @@
 #!/usr/bin/env bash
-# ─────────────────────────────────────────────────────────────────────
-# setup-ligolo-arch.sh — Arch/CachyOS/BlackArch port of setup-ligolo.sh
+# ============================================================================
+# Ligolo-NG pivot wrapper installer (Arch / CachyOS / Kali)
 #
-#   Pulls Ligolo-NG proxy + cross-platform agents from upstream releases
-#   (nicocha30/ligolo-ng) and stages the workspace exactly the way the
-#   upstream Kali-based script does — but without apt-get / dpkg.
-#
-#   Repo:   https://github.com/1337codes/OSCP-Ligolo
-#   Usage:  chmod +x setup-ligolo-arch.sh && ./setup-ligolo-arch.sh
-# ─────────────────────────────────────────────────────────────────────
+# Portable rewrite:
+#   - No hardcoded username (uses $USER / $SUDO_USER / id -un)
+#   - No hardcoded path. Workspace = directory this script lives in.
+#   - Auto-patches LIGOLO_DIR inside tunnels.sh and ligolofix.sh
+#   - Auto-installs ligoloup / ligolofix aliases for zsh and/or bash
+#   - Drops stale install bugs (Windows agent fetch fixed, idempotent re-runs)
+# ============================================================================
 
-set -u
+set -euo pipefail
 
-R='\033[91m'; G='\033[92m'; Y='\033[93m'; C='\033[96m'; B='\033[1m'; N='\033[0m'
+# -- color helpers -----------------------------------------------------------
+RED=$'\033[0;31m'; GRN=$'\033[0;32m'; YLW=$'\033[1;33m'
+CYN=$'\033[0;36m'; BLD=$'\033[1m';   NC=$'\033[0m'
 
-banner() { echo -e "\n${C}${B}[*]${N} ${B}$1${N}"; }
-ok()     { echo -e "${G}[+]${N} $1"; }
-warn()   { echo -e "${Y}[!]${N} $1"; }
-fail()   { echo -e "${R}[-]${N} $1" >&2; }
+say()  { printf '%s[*]%s %s\n' "$CYN" "$NC" "$*"; }
+ok()   { printf '%s[+]%s %s\n' "$GRN" "$NC" "$*"; }
+warn() { printf '%s[!]%s %s\n' "$YLW" "$NC" "$*"; }
+die()  { printf '%s[X]%s %s\n' "$RED" "$NC" "$*" >&2; exit 1; }
 
-# ─── version + paths ─────────────────────────────────────────────────
-LIGOLO_VERSION="${LIGOLO_VERSION:-0.8.3}"
-TARGET_USER="${SUDO_USER:-$USER}"
-TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
-WORKSPACE="$TARGET_HOME/Desktop/OSCP/LIGOLO"
-RELEASE_BASE="https://github.com/nicocha30/ligolo-ng/releases/download/v${LIGOLO_VERSION}"
+# -- config ------------------------------------------------------------------
+VERSION="${LIGOLO_VERSION:-0.8.3}"
 
-if [[ $EUID -ne 0 ]]; then
-    if ! command -v sudo &>/dev/null; then
-        fail "Run as root or install sudo."; exit 1
-    fi
-    SUDO="sudo"
-else
-    SUDO=""
-fi
+# Real user (works correctly even if invoked via sudo)
+CURRENT_USER="${SUDO_USER:-$(id -un)}"
 
-run_as_user() {
-    if [[ $EUID -eq 0 ]] && [[ "$TARGET_USER" != "root" ]]; then
-        sudo -u "$TARGET_USER" -H "$@"
-    else
-        "$@"
-    fi
-}
+# Workspace = directory this script lives in (whatever the repo dir is)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)"
+WORKSPACE="$SCRIPT_DIR"
 
-banner "Ligolo-NG pivot wrapper installer (Arch/CachyOS)"
-echo "    version:    ${LIGOLO_VERSION}"
-echo "    workspace:  ${WORKSPACE}"
-echo "    user:       ${TARGET_USER}"
+PROXY_BIN="$WORKSPACE/proxy"
+AGENT_DIR="$WORKSPACE/agents"
+YAML_FILE="$WORKSPACE/ligolo-ng.yaml"
 
-# ─── sanity: required tools ──────────────────────────────────────────
-banner "Checking required tools"
-need=(curl tar ip)
-missing=()
-for t in "${need[@]}"; do command -v "$t" &>/dev/null || missing+=("$t"); done
-if (( ${#missing[@]} )); then
-    warn "missing: ${missing[*]} — installing via pacman"
-    $SUDO pacman -S --needed --noconfirm curl tar iproute2 || { fail "pacman install failed"; exit 1; }
-fi
-ok "curl / tar / iproute2 present"
+REL_BASE="https://github.com/nicocha30/ligolo-ng/releases/download/v${VERSION}"
 
-# ─── stage workspace ─────────────────────────────────────────────────
-banner "Staging workspace at $WORKSPACE"
-run_as_user mkdir -p "$WORKSPACE/agents"
+# host arch detection for the local proxy
+HOST_ARCH="$(uname -m)"
+case "$HOST_ARCH" in
+  x86_64)  PROXY_ARCH="amd64" ;;
+  aarch64) PROXY_ARCH="arm64" ;;
+  armv7l)  PROXY_ARCH="armv7" ;;
+  *)       PROXY_ARCH="amd64"; warn "Unknown host arch '$HOST_ARCH', defaulting proxy to amd64" ;;
+esac
+
+printf '%s\n' "$BLD============================================================$NC"
+say "Ligolo-NG pivot wrapper installer"
+printf '    version:    %s\n' "$VERSION"
+printf '    workspace:  %s\n' "$WORKSPACE"
+printf '    user:       %s\n' "$CURRENT_USER"
+printf '    host arch:  %s (%s)\n' "$HOST_ARCH" "$PROXY_ARCH"
+printf '%s\n' "$BLD============================================================$NC"
+
+# -- required tools ----------------------------------------------------------
+say "Checking required tools"
+for t in curl tar unzip ip; do
+  command -v "$t" >/dev/null 2>&1 || die "Missing required tool: $t"
+done
+ok "curl / tar / unzip / iproute2 present"
+
+# -- workspace ---------------------------------------------------------------
+say "Staging workspace at $WORKSPACE"
+mkdir -p "$AGENT_DIR"
 ok "workspace ready"
 
-# ─── proxy ───────────────────────────────────────────────────────────
-banner "Fetching ligolo-proxy ${LIGOLO_VERSION} (linux/amd64)"
-PROXY_TGZ="ligolo-ng_proxy_${LIGOLO_VERSION}_linux_amd64.tar.gz"
-PROXY_TMP=$(mktemp -d)
-if curl -sLf "${RELEASE_BASE}/${PROXY_TGZ}" | tar xz -C "$PROXY_TMP"; then
-    run_as_user mv -f "$PROXY_TMP/proxy" "$WORKSPACE/proxy"
-    run_as_user chmod +x "$WORKSPACE/proxy"
-    ok "$WORKSPACE/proxy installed ($(stat -c%s "$WORKSPACE/proxy") bytes)"
+# -- fetch proxy -------------------------------------------------------------
+PROXY_TARBALL="ligolo-ng_proxy_${VERSION}_linux_${PROXY_ARCH}.tar.gz"
+say "Fetching ligolo-proxy ${VERSION} (linux/${PROXY_ARCH})"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+if curl -fL --progress-bar "${REL_BASE}/${PROXY_TARBALL}" -o "$TMP/proxy.tgz"; then
+  tar -xzf "$TMP/proxy.tgz" -C "$TMP" proxy
+  install -m 0755 "$TMP/proxy" "$PROXY_BIN"
+  ok "$PROXY_BIN installed ($(stat -c%s "$PROXY_BIN") bytes)"
 else
-    fail "could not fetch proxy tarball — check network / version"
-    exit 1
-fi
-rm -rf "$PROXY_TMP"
-
-# ─── strict cleanup of agents/ ───────────────────────────────────────
-ALLOWED_RX='^ligolo-agent-(linux|windows|darwin|freebsd)-(amd64|arm64|386|armv[5-7])(\.exe)?$'
-banner "Scrubbing stale entries from agents/"
-CLEANED=0
-while IFS= read -r f; do
-    base=$(basename "$f")
-    if ! [[ "$base" =~ $ALLOWED_RX ]]; then
-        run_as_user rm -f "$f" && CLEANED=$((CLEANED+1))
-    fi
-done < <(find "$WORKSPACE/agents" -maxdepth 1 \( -type f -o -type l \) 2>/dev/null)
-[[ $CLEANED -eq 0 ]] && ok "agents/ already clean" || ok "removed $CLEANED stale entry/entries"
-
-# ─── agents (cross-platform) ─────────────────────────────────────────
-# Note: linux/darwin/freebsd are .tar.gz, windows is .zip
-banner "Fetching agents (linux / windows / darwin / freebsd × amd64+arm64)"
-
-# Make sure unzip is around for the windows case
-if ! command -v unzip &>/dev/null; then
-    warn "unzip missing — installing for windows agent extraction"
-    $SUDO pacman -S --needed --noconfirm unzip || warn "couldn't install unzip — windows agents will be skipped"
+  die "Failed to download $PROXY_TARBALL"
 fi
 
-STAGED=0; SKIPPED=0
-for os in linux windows darwin freebsd; do
-    for arch in amd64 arm64; do
-        ext=""; [[ "$os" == "windows" ]] && ext=".exe"
-        dst="$WORKSPACE/agents/ligolo-agent-${os}-${arch}${ext}"
-        if [[ -f "$dst" ]]; then
-            SKIPPED=$((SKIPPED+1))
-            continue
-        fi
-        tmp=$(mktemp -d)
-        if [[ "$os" == "windows" ]]; then
-            # Windows is shipped as zip
-            zip="ligolo-ng_agent_${LIGOLO_VERSION}_${os}_${arch}.zip"
-            if curl -sLf "${RELEASE_BASE}/${zip}" -o "$tmp/a.zip" \
-               && command -v unzip &>/dev/null \
-               && unzip -q "$tmp/a.zip" -d "$tmp" \
-               && [[ -f "$tmp/agent.exe" ]]; then
-                run_as_user mv -f "$tmp/agent.exe" "$dst"
-                run_as_user chmod +x "$dst"
-                ok "${os}-${arch}${ext}"
-                STAGED=$((STAGED+1))
-            else
-                warn "${os}-${arch} not available in v${LIGOLO_VERSION}, skipping"
-            fi
-        else
-            # Everything else is tar.gz
-            tgz="ligolo-ng_agent_${LIGOLO_VERSION}_${os}_${arch}.tar.gz"
-            if curl -sLf "${RELEASE_BASE}/${tgz}" | tar xz -C "$tmp" 2>/dev/null \
-               && [[ -f "$tmp/agent" ]]; then
-                run_as_user mv -f "$tmp/agent" "$dst"
-                run_as_user chmod +x "$dst"
-                ok "${os}-${arch}"
-                STAGED=$((STAGED+1))
-            else
-                warn "${os}-${arch} not available in v${LIGOLO_VERSION}, skipping"
-            fi
-        fi
-        rm -rf "$tmp"
-    done
+# -- fetch agents ------------------------------------------------------------
+say "Scrubbing stale entries from agents/"
+find "$AGENT_DIR" -maxdepth 1 -type f -name 'ligolo-agent-*' -mtime +180 -delete 2>/dev/null || true
+ok "agents/ pruned"
+
+# (os, arch, ext)   ext is "tar.gz" for unix-likes, "zip" for windows
+AGENTS=(
+  "linux:amd64:tar.gz"
+  "linux:arm64:tar.gz"
+  "windows:amd64:zip"
+  "windows:arm64:zip"
+  "darwin:amd64:tar.gz"
+  "darwin:arm64:tar.gz"
+  "freebsd:amd64:tar.gz"
+  "freebsd:arm64:tar.gz"
+)
+
+say "Fetching agents"
+got=0; missing=0; present=0
+for spec in "${AGENTS[@]}"; do
+  IFS=: read -r os arch ext <<<"$spec"
+  pkg="ligolo-ng_agent_${VERSION}_${os}_${arch}.${ext}"
+  case "$os" in
+    windows) dest="$AGENT_DIR/ligolo-agent-${os}-${arch}.exe" ;;
+    *)       dest="$AGENT_DIR/ligolo-agent-${os}-${arch}" ;;
+  esac
+
+  if [[ -x "$dest" ]]; then
+    present=$((present+1))
+    continue
+  fi
+
+  if ! curl -fLs --max-time 30 "${REL_BASE}/${pkg}" -o "$TMP/${pkg}"; then
+    warn "${os}-${arch} not available in v${VERSION}, skipping"
+    missing=$((missing+1))
+    continue
+  fi
+
+  case "$ext" in
+    tar.gz)
+      tar -xzf "$TMP/${pkg}" -C "$TMP" agent
+      install -m 0755 "$TMP/agent" "$dest"
+      ;;
+    zip)
+      unzip -q -o "$TMP/${pkg}" -d "$TMP/wzip"
+      # the windows zip ships agent.exe
+      install -m 0755 "$TMP/wzip/agent.exe" "$dest"
+      rm -rf "$TMP/wzip"
+      ;;
+  esac
+  got=$((got+1))
 done
-ok "agents staged: ${STAGED} new, ${SKIPPED} already present"
+ok "agents staged: $got new, $present already present, $missing missing"
 
-# ─── TUN kernel module ───────────────────────────────────────────────
-banner "Loading TUN kernel module"
+# -- TUN module --------------------------------------------------------------
+say "Loading TUN kernel module"
 if lsmod | grep -q '^tun '; then
-    ok "tun module already loaded"
+  ok "tun module already loaded"
 else
-    $SUDO modprobe tun && ok "tun module loaded" || fail "could not load tun module"
+  sudo modprobe tun && ok "tun loaded" || warn "could not modprobe tun (continuing)"
 fi
 
-# Persist via systemd-modules-load (the Arch way), not /etc/modules
-if [[ ! -f /etc/modules-load.d/tun.conf ]] || ! grep -q '^tun$' /etc/modules-load.d/tun.conf 2>/dev/null; then
-    echo tun | $SUDO tee /etc/modules-load.d/tun.conf >/dev/null && ok "tun added to /etc/modules-load.d/tun.conf"
+PERSIST="/etc/modules-load.d/tun.conf"
+if [[ -f "$PERSIST" ]] && grep -q '^tun$' "$PERSIST"; then
+  ok "tun already persistent in /etc/modules-load.d/"
 else
-    ok "tun already persistent in /etc/modules-load.d/"
+  echo 'tun' | sudo tee "$PERSIST" >/dev/null && ok "tun added to $PERSIST"
 fi
 
-# ─── ligolo-ng.yaml stub ─────────────────────────────────────────────
-banner "Checking ligolo-ng.yaml"
-YAML="$WORKSPACE/ligolo-ng.yaml"
-if [[ ! -s "$YAML" ]]; then
-    [[ -e "$YAML" ]] && warn "ligolo-ng.yaml exists but is empty — overwriting" || warn "ligolo-ng.yaml missing — writing stub"
-    run_as_user tee "$YAML" >/dev/null <<'YAML'
-# ligolo-ng minimal config — edit as needed
-# Reference: https://docs.ligolo.ng/
-listen: 0.0.0.0:11601
-selfcert: true
-selfcert-domain: ligolo
-# certfile: certs/cert.pem
-# keyfile: certs/key.pem
-# autocert: false
-# allow-domains: ""
-verbose: false
-YAML
-    ok "ligolo-ng.yaml stub written ($(stat -c%s "$YAML") bytes)"
+# -- ligolo-ng.yaml ----------------------------------------------------------
+say "Checking ligolo-ng.yaml"
+if [[ -f "$YAML_FILE" ]]; then
+  ok "ligolo-ng.yaml present ($(stat -c%s "$YAML_FILE") bytes)"
 else
-    ok "ligolo-ng.yaml present ($(stat -c%s "$YAML") bytes)"
+  : > "$YAML_FILE"
+  ok "ligolo-ng.yaml created (empty)"
 fi
 
-# ─── final state ─────────────────────────────────────────────────────
-banner "Workspace state"
-echo
-echo -e "${C}$WORKSPACE${N}"
-run_as_user ls -la "$WORKSPACE" | grep -vE '^total|^d.+ \.\.?$'
-echo
-echo -e "${C}$WORKSPACE/agents${N}"
-run_as_user ls -la "$WORKSPACE/agents" | grep -vE '^total|^d.+ \.\.?$'
+# -- patch hardcoded paths in wrappers --------------------------------------
+patch_wrapper() {
+  local f="$1"
+  [[ -f "$f" ]] || return 0
+  if grep -q '/home/alien/Desktop/OSCP/LIGOLO' "$f" \
+     || grep -q '^LIGOLO_DIR=' "$f"; then
+    # Backup once
+    [[ -f "${f}.orig" ]] || cp -p "$f" "${f}.orig"
+    # Replace the old hardcoded path AND any LIGOLO_DIR= line with our workspace
+    sed -i \
+      -e "s|/home/alien/Desktop/OSCP/LIGOLO|${WORKSPACE}|g" \
+      -e "s|^LIGOLO_DIR=.*|LIGOLO_DIR=\"${WORKSPACE}\"|" \
+      "$f"
+    chmod +x "$f"
+    ok "patched LIGOLO_DIR in $(basename "$f")"
+  fi
+}
 
-echo
-echo -e "${G}${B}[✓] Ligolo-NG ready to roll.${N}"
-echo
-echo -e "    ${C}Workspace:${N}  $WORKSPACE"
-echo -e "    ${C}Proxy:${N}      $WORKSPACE/proxy"
-echo -e "    ${C}Agents:${N}     $WORKSPACE/agents/  (cross-platform, clean names)"
-echo
-echo -e "${C}${B}Quick start:${N}"
-echo -e "    ${C}# 1. Create a TUN interface (the wrapper does this for you):${N}"
-echo -e "    sudo ip tuntap add user $TARGET_USER mode tun ligolo"
-echo -e "    sudo ip link set ligolo up"
-echo
-echo -e "    ${C}# 2. Run the wrapper:${N}"
-echo -e "    cd $WORKSPACE && bash tunnels.sh"
-echo
-echo -e "${Y}[!] Reminder:${N} ligolofix.sh / tunnels.sh hard-code /home/alien/Desktop/OSCP/LIGOLO."
-echo -e "    If your username isn't 'alien', edit the LIGOLO_DIR variable inside both scripts:"
-echo -e "    sed -i \"s|/home/alien/Desktop/OSCP/LIGOLO|$WORKSPACE|g\" ligolofix.sh tunnels.sh"
+say "Patching wrapper scripts to use $WORKSPACE"
+patch_wrapper "$WORKSPACE/tunnels.sh"
+patch_wrapper "$WORKSPACE/ligolofix.sh"
+
+# -- shell aliases -----------------------------------------------------------
+install_alias_block() {
+  local rc="$1"
+  [[ -f "$rc" ]] || return 0
+
+  local marker_begin="# >>> ligolo wrappers >>>"
+  local marker_end="# <<< ligolo wrappers <<<"
+
+  # Strip any prior block so re-runs don't stack duplicates
+  if grep -qF "$marker_begin" "$rc"; then
+    sed -i "/${marker_begin}/,/${marker_end}/d" "$rc"
+  fi
+
+  {
+    echo ""
+    echo "$marker_begin"
+    echo "alias ligoloup='bash \"${WORKSPACE}/tunnels.sh\"'"
+    echo "alias ligolofix='bash \"${WORKSPACE}/ligolofix.sh\"'"
+    echo "$marker_end"
+  } >> "$rc"
+
+  ok "aliases written to $(basename "$rc")"
+}
+
+say "Installing shell aliases"
+HOME_DIR="$(eval echo "~${CURRENT_USER}")"
+install_alias_block "${HOME_DIR}/.zshrc"
+install_alias_block "${HOME_DIR}/.bashrc"
+
+# Make the rc files owned by the actual user even if we ran with sudo
+if [[ -n "${SUDO_USER:-}" ]]; then
+  chown "${CURRENT_USER}:" "${HOME_DIR}/.zshrc" "${HOME_DIR}/.bashrc" 2>/dev/null || true
+fi
+
+# -- summary -----------------------------------------------------------------
+echo ""
+say "Workspace state $WORKSPACE"
+ls -lh "$WORKSPACE" 2>/dev/null | grep -v '^total' || true
+echo ""
+ls -lh "$AGENT_DIR" 2>/dev/null | grep -v '^total' || true
+echo ""
+printf '%s[OK]%s Ligolo-NG ready to roll.\n' "$GRN" "$NC"
+printf '    Workspace:  %s\n' "$WORKSPACE"
+printf '    Proxy:      %s\n' "$PROXY_BIN"
+printf '    Agents:     %s/\n' "$AGENT_DIR"
+echo ""
+printf 'Quick start:\n'
+printf '    source ~/.zshrc   # or open a new terminal\n'
+printf '    ligolofix         # option 1: create tun interfaces + routes\n'
+printf '    ligoloup          # launch proxy with the interactive wrapper\n'
+echo ""
